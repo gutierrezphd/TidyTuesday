@@ -1,0 +1,32 @@
+{
+    "id": "C232A2BC",
+    "path": null,
+    "project_path": null,
+    "type": "r_dataframe",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1615262298419.0,
+    "source_on_save": false,
+    "relative_order": 3,
+    "properties": {
+        "expression": ".",
+        "caption": ".",
+        "totalObservations": "3268",
+        "displayedObservations": "3268",
+        "variables": "6",
+        "cacheKey": "9E044DEA",
+        "object": ".",
+        "environment": "_rs_no_env",
+        "contentUrl": "grid_resource/gridviewer.html?env=_rs_no_env&obj=.&cache_key=9E044DEA&max_cols=50",
+        "preview": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 140273389698792,
+    "encoding": "",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1615262298419,
+    "read_only": false,
+    "read_only_alternatives": []
+}
