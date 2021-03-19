@@ -66,10 +66,16 @@ df <- tt$games
 Explore the data and process it into a nice format for plotting! Access each dataset by name by using a dollarsign after the `tt` object and then the name of the data set.
 
 ```{r Wrangle}
-font_import("/Users/Ian/Library/Fonts/",prompt = FALSE)
-browseURL("https://hyperpix.net/fonts/civilization-font/")
+browseURL("https://hyperpix.net/fonts/civilization-font/") #font source
+font_import() #import OPTI Columna font after installation
+browseURL("https://upload.wikimedia.org/wikipedia/en/thumb/3/3b/Civilization_VI_cover_art.jpg/220px-Civilization_VI_cover_art.jpg") #image source
 civ <- df %>% filter(grepl("Sid Meier", gamename)) 
-civ$gamename <- civ$gamename %>% str_sub(., 13) %>% factor
+civ$gamename <- civ$gamename %>% recode(., 
+                                        "Sid Meier's Civilization III: Complete"  = "Civilization III",
+                                                  "Sid Meier's Civilization IV: Beyond the Sword" = "Civilization IV",
+                                                  "Sid Meier's Civilization V" = "Civilization V",
+                                                  "Sid Meier's Civilization VI" = "Civilization VI",
+                                                  "Sid Meier's Civilization: Beyond Earth" = "Civilization: Beyond Earth") %>% factor(.)
 civ <- civ %>% 
   mutate(year.month = zoo::as.yearmon(paste(month, year)) %>% as.Date())
 civ$year.month.fct <- factor(civ$year.month)
@@ -84,6 +90,13 @@ civ2 <- civ %>%
   ungroup %>% 
   arrange(year.month.fct)
 civ2$year.month.fct %<>% as.yearmon(.) %>% as.Date(.)
+
+civ2 %<>% 
+  group_by(gamename) %>% 
+  mutate(pct.max = max(pct, na.rm=TRUE)) %>% 
+  ungroup %>% 
+  mutate(gamename = fct_reorder(gamename, -pct.max))
+civ2 %<>% select(-pct.max)
 ```
 
 
@@ -92,29 +105,32 @@ civ2$year.month.fct %<>% as.yearmon(.) %>% as.Date(.)
 Using your processed dataset, create your unique visualization.
 
 ```{r Visualize}
+civ.pal <- paletter::create_palette(paste0(getwd(),"/220px-Civilization_VI_cover_art.jpg"), 12, "categorical")
+show_col(civ.pal)
+
 civ2 %>% 
   ggplot(aes(year.month.fct, pct, fill = gamename)) +
-  geom_stream(type="proportional", n_grid=1000) +
-  geom_stream_label(aes(label = gamename, family = "OPTIColumna-Solid"), type="ridge", position=position_jitter(height=.06, seed=96), size=12/2.8, n_grid=1000, limits = as.Date(c("2012-01-01", "2022-01-01"))) +
-  scale_x_date(breaks = scales::date_breaks("2 years"),
+  geom_stream(type="proportional", n_grid=200) +
+  geom_stream_label(aes(label = gamename, family = "OPTIColumna-Solid"), type="ridge", position=position_jitter(height=.05, seed=5), size=12/2.8, n_grid=200) +
+  scale_x_date(breaks = scales::date_breaks("1 year"),
                labels = date_format("%Y"),
-               limits = as.Date(c("2012-01-01", "2022-01-01"))) +
+               limits = as.Date(c("2012-07-01", "2021-01-01"))) +
   scale_y_continuous(labels = scales::percent_format()) +
-  scale_fill_manual(values = rev(viridis::magma(7))) +
+  scale_fill_manual(values = rev(civ.pal[c(6,1,11,12,9)])) +
   theme_hc() + 
   theme(panel.grid = element_blank(),
+        panel.grid.major.y = element_blank(),
+        plot.background = element_rect(fill = "#BFA383"),
         plot.title = element_text(hjust = 0.5),
         plot.subtitle = element_text(hjust = 0.5),
         plot.caption = element_text(size=8),
         text = element_text(size=14, family = "OPTIColumna-Solid"),
         legend.position = "none") +
   labs(title="Sid Meier's Civilization",
-       subtitle='"One... more... turn..."',
+       subtitle='One... more... turn...',
        x = "",
-       y = "Average Players per Month",
+       y = "Proportion of Civilization\nPlayers per Month",
        caption = "Visualization by @ianagutierrez | Data Source: Steam and SteamCharts")
-
-  
 ```
 
 # Save Image
