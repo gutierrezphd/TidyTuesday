@@ -1,0 +1,174 @@
+#
+# This is a Shiny web application. You can run the application by clicking
+# the 'Run App' button above.
+#
+# Find out more about building applications with Shiny here:
+#
+#    http://shiny.rstudio.com/
+#
+
+#  https://mastering-shiny.org/
+
+library(shiny)
+library(thematic)
+library(bslib)
+library(lubridate)
+library(ggplot2)
+library(plotly)
+library(formattable)
+library(magrittr)
+library(dplyr)
+
+vaporgif <- sample(c('https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fthumbs.gfycat.com%2FUnpleasantMeanBichonfrise-max-1mb.gif&f=1&nofb=1',
+              'https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fmedia.tenor.com%2Fimages%2F67a19839903e3095e5575cde36b49d75%2Ftenor.gif&f=1&nofb=1',
+              'https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fmedia.giphy.com%2Fmedia%2F3o6Ztp7WyY2Wvm5sUE%2Fgiphy.gif&f=1&nofb=1',
+              'https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fmedia1.tenor.com%2Fimages%2F9607f4300e8809ea22a584a2ba6a0dcb%2Ftenor.gif%3Fitemid%3D5159495&f=1&nofb=1',
+              'https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fmedia1.tenor.com%2Fimages%2F917e28a27d13ffea0a032516149d8dec%2Ftenor.gif%3Fitemid%3D5738212&f=1&nofb=1',
+              'https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fmedia1.tenor.com%2Fimages%2F18dd3b564072ab0881ab2b13a7753b0e%2Ftenor.gif%3Fitemid%3D5860505&f=1&nofb=1'),1)
+
+# Define UI 
+ui <- {fluidPage(
+    theme = bs_theme(
+        bg = "#000000", 
+        fg = "#00FF00", 
+        primary="#00FF00", 
+        secondary="#00FF00",  
+        accent = "#757575", 
+        base_font = font_google("Source Code Pro")
+        ),
+    #panels
+    tabsetPanel(
+        type = "pills",
+        tabPanel("Table", 
+                 img(src=vaporgif, align = "right"),
+                 #titlePanel("Weight Loss Dashboard"),
+                 #introductory text
+                 h5(format(Sys.Date(), "%B"),
+                    paste(scales::ordinal(as.numeric(format(Sys.Date(), "%d"))),",", sep=""),
+                    format(Sys.Date(), "%Y"),
+                    "at ",
+                    format(Sys.time(), "%I:%M %p")),
+                 #### NEED TO RECREATE BUTTONS AND TIME VARS ####
+                 dateRangeInput(
+                     inputId = "month",
+                     label = "Plot Range",
+                     start = "2020-01-21",
+                     end = Sys.Date(),
+                     min = "2020-01-21",
+                     max = Sys.Date(),
+                     format = "yyyy-mm-dd",
+                     startview = "months",
+                     weekstart = 0,
+                     language = "en",
+                     separator = " to ",
+                     width = NULL,
+                     autoclose = TRUE
+                 ),
+                 checkboxGroupInput("status", "Eating/Fasting Status:",
+                              c("Eating" = "Eating",
+                                "Fasting" = "Fasting"),
+                              selected = c("Eating","Fasting"),
+                              inline = TRUE),
+                 checkboxGroupInput(
+                     inputId = "weekday", 
+                     label = "Day of the Week", 
+                     choices = c("Monday" = "Mon",
+                                 "Tuesday" = "Tue",
+                                 "Wednesday" = "Wed",
+                                 "Thursday" = "Thu",
+                                 "Friday" = "Fri",
+                                 "Saturday" = "Sat",
+                                 "Sunday" = "Sun"),
+                     selected = c("Mon","Tue","Wed","Thu","Fri","Sat","Sun"),
+                     inline = TRUE
+                     ), 
+                 formattableOutput("month.table",
+                                   width = "75%")),
+        tabPanel("Plot",
+                 img(src='https://ffwallpaper.com/thumb/vaporwave/vaporwave-18.png', align = "left"),
+                 dateRangeInput(
+                     inputId = "date",
+                     label = "Plot Range",
+                     start = Sys.Date()-90,
+                     end = Sys.Date(),
+                     min = "2020-01-21",
+                     max = Sys.Date(),
+                     format = "yyyy-mm-dd",
+                     startview = "months",
+                     weekstart = 0,
+                     language = "en",
+                     separator = " to ",
+                     width = NULL,
+                     autoclose = TRUE
+                 ),
+                 plotlyOutput("plot",
+                              width = "100%",
+                              height = "600px"))))}
+
+# Define server logic required to produce Plotly plot
+server <- {function(input, output) {
+    output$month.table <- renderFormattable({
+        month.tab <- wl
+        month.tab %<>% subset(., status %in% input$status)
+        month.tab %<>% subset(., day %in% input$weekday)
+        month.tab %<>% subset(., date %within% interval(input$month[1], input$month[2])) %>%
+            group_by(month) %>% 
+            dplyr::summarize(mean = mean(weight) %>% round(1), 
+                             median = median(weight) %>% round(1), 
+                             sd = sd(weight) %>% round(1),
+                             n = n(),
+                             minimum = min(weight),
+                             maximum = max(weight),
+                             `95% CI` = paste(
+                                 sprintf("%.1f", mean-qnorm(0.975)*sd/sqrt(n),1),
+                                 sprintf("%.1f", mean+qnorm(0.975)*sd/sqrt(n),1),
+                                 sep = " - ")) %>% 
+            as.data.frame()
+        month.tab %<>% mutate(., change = -(lag(mean) - mean))
+        colnames(month.tab) <- c("Month", "Mean", "Median", "SD", "Obs", "Minimum", "Maximum", "95% CI", "Mean Change")
+        formattable(month.tab, list(Mean = color_tile("gray30", "black"),
+                                    Median = color_tile("gray30", "black"),
+                                    SD = color_tile("gray30", "black"),
+                                    N = color_tile("gray30", "black"),
+                                    Obs = color_tile("gray30", "black"),
+                                    Minimum = color_tile("gray30", "black"),
+                                    Maximum = color_tile("gray30", "black"),
+                                    `Mean Change` = formatter("span", style = ~ style(color = ifelse(`Mean` > lag(`Mean`), "red", "#00FF00")),
+                                                              ~ icontext(ifelse(`Mean` > lag(`Mean`),"arrow-up", "arrow-down"), sprintf("%.1f", `Mean Change`)))))
+    })
+    output$plot <- renderPlotly({
+        wl.plot <- subset(wl, date %within% interval(input$date[1], input$date[2]))
+        gg <- ggplotly(ggplot(wl.plot, aes(date.time, weight)) +
+            geom_point(size=3, alpha=.4, shape=15, aes(color = status)) + 
+            geom_line(size=1, aes(y = mean.roll, color="7-Day Average")) +
+            geom_smooth(method = "lm", formula = y ~ x, alpha=.08, aes(color="Linear")) + #linear
+            geom_smooth(method = "lm", formula = y ~ x + I(x^2), alpha=.08, aes(color="Quadratic")) + #quadratic
+            scale_x_datetime(date_breaks = case_when((input$date[2]-input$date[1])>180 ~ "1 month", 
+                                                     (input$date[2]-input$date[1]) %in% 60:180 ~ "2 weeks", 
+                                                     (input$date[2]-input$date[1]) %in% 15:60 ~ "1 week",
+                                                     (input$date[2]-input$date[1]) %in% 8:15 ~ "2 days",
+                                                     (input$date[2]-input$date[1])<8 ~ "1 day"), 
+                             date_labels = ifelse(input$date[2]-input$date[1]>180, "%b", "%d-%b"),
+                             limits = c(as.POSIXct(input$date[1]), 
+                                        as.POSIXct(input$date[2]+1))) +
+            scale_y_continuous(limits = c(floor(min(wl.plot$weight)/5)*5,
+                                          ceiling(max(wl.plot$weight)/5)*5),
+                               breaks = seq(from = floor(min(wl.plot$weight)/5)*5, 
+                                            to = ceiling(max(wl.plot$weight)/5)*5, 
+                                            by = 5)) +
+            labs(x = "Date",
+                 y = "Weight",
+                 color = "") +
+            theme(axis.title.y = element_text(angle = 90, vjust = 0.5)))
+        gg$x$data[[4]]$visible <- 'legendonly'
+        gg$x$data[[5]]$visible <- 'legendonly'
+        gg$x$data[[6]]$visible <- 'legendonly'
+        gg$x$data[[7]]$visible <- 'legendonly'
+    print(gg)
+    })
+}}
+
+# Run the application 
+thematic::thematic_shiny(font = font_spec("auto", scale = 1.5))
+runApp(list(ui = ui, server = server), launch.browser = TRUE)
+

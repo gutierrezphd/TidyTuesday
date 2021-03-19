@@ -1,0 +1,7 @@
+diamonds %>% 
+  group_by(cut, color) %>% 
+  summarise(av_price = mean(price)) %>% 
+  ggplot(aes(color, av_price, fill=cut)) +
+  geom_col(position="dodge") +
+  facet_wrap(~cut, nrow=1) +
+  theme(strip.text.x = element_blank())

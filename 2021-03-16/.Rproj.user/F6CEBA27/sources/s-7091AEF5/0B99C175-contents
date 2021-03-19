@@ -1,0 +1,290 @@
+#####################################################
+#  WEIGHT LOSS ANALYSIS                             #
+#                                                   #
+#  IAN GUTIERREZ, Ph.D..                            #
+#  GUTIERREZ COUNSELING AND CONSULTATION LLC        #
+#  ian.gutierrez.phd@gmail.com                      #
+#####################################################
+
+
+#### LIBRARY ####
+library(magrittr)
+library(dplyr)
+library(lubridate)
+library(stringr)
+library(ggplot2)
+library(plotly)
+library(htmlwidgets)
+library(devtools)
+library(vapoRwave) #install_github("moldach/vapoRwave")
+library(extrafont)
+library(readr)
+library(zoo)
+library(formattable)
+
+
+#### IMPORT WEIGHT DATA ####
+if (file.exists("/Users/Ian/Downloads/VeSyncFit-Ian Gutierrez.csv")==TRUE) {
+  wl <- read.csv("/Users/Ian/Downloads/VeSyncFit-Ian Gutierrez.csv") #import weight
+  file.remove("/Users/Ian/Downloads/VeSyncFit-Ian Gutierrez.csv") 
+  cat("FILE IMPORTED")#delete the file
+}  
+#fast <- read.csv("/Users/Ian/Downloads/zero.csv") #import fast
+#file.remove("/Users/Ian/Downloads/zero.csv") #delete the file
+
+#### DATA PREPARATION ####
+names(wl) %<>% tolower(.)
+
+#### DATE AND TIME ####
+wl %<>% dplyr::rename(., "date.time" = "time.of.measurement")
+date.time <- wl$date.time %>% str_split_fixed(., " at ", n=Inf) %>% as.data.frame(.)
+colnames(date.time) <- c("date", "time")
+date.time$date %<>% str_replace_all(., "[:punct:]", "")
+date.time$date %<>% mdy(.)
+date.time$time %<>% parse_time(., '%H:%M:%S %p')
+wl <- cbind(date.time, wl)
+wl %<>% dplyr::select(., -date.time)
+wl$date.time <- ymd_hms(paste(wl$date, wl$time), tz = "UTC")
+time.breaks <- hour(hm("00:00", "3:00", "12:00", "18:00", "23:59"))
+time.labels <- c("Night", "Morning", "Afternoon", "Night")
+wl$time.day <- cut(hour(wl$time), breaks = time.breaks, labels = time.labels, include.lowest=TRUE)
+wl$time.day %<>% factor(., levels=c("Morning", "Afternoon", "Night"))
+names(wl)
+wl$status <- cbind(wl$date.time %within% interval("2020-10-13 00:00:00", "2020-10-16 17:00:00"),
+      wl$date.time %within% interval("2020-10-20 00:00:00", "2020-10-23 17:00:00"),
+      wl$date.time %within% interval("2020-10-27 00:00:00", "2020-10-30 17:00:00"),
+      wl$date.time %within% interval("2020-11-04 00:00:00", "2020-11-06 17:00:00"),
+      wl$date.time %within% interval("2020-11-10 00:00:00", "2020-11-13 17:00:00"),
+      wl$date.time %within% interval("2020-11-17 00:00:00", "2020-11-20 17:00:00"),
+      wl$date.time %within% interval("2020-11-23 00:00:00", "2020-11-25 17:00:00"),
+      wl$date.time %within% interval("2020-11-30 00:00:00", "2020-12-04 17:00:00"),
+      wl$date.time %within% interval("2020-12-07 23:36:00", "2020-12-11 17:36:00"),
+      wl$date.time %within% interval("2020-12-14 00:00:00", "2020-12-15 17:00:00"),
+      wl$date.time %within% interval("2020-12-17 00:00:00", "2020-12-18 17:00:00"),
+      wl$date.time %within% interval("2020-12-21 00:00:00", "2020-12-22 17:00:00"),
+      wl$date.time %within% interval("2021-01-05 00:00:00", "2021-01-06 18:00:00"),
+      wl$date.time %within% interval("2021-01-07 00:00:00", "2021-01-08 18:00:00"),
+      wl$date.time %within% interval("2021-01-12 00:00:00", "2021-01-13 17:00:00"),
+      wl$date.time %within% interval("2021-01-14 00:00:00", "2021-01-14 21:00:00"),
+      wl$date.time %within% interval("2021-01-15 00:00:00", "2021-01-15 18:00:00"),
+      wl$date.time %within% interval("2021-01-19 00:00:00", "2021-01-20 12:00:00"),
+      wl$date.time %within% interval("2021-01-21 00:00:00", "2021-01-22 17:00:00"),
+      wl$date.time %within% interval("2021-01-26 00:00:00", "2021-01-26 18:00:00"),
+      wl$date.time %within% interval("2021-01-27 00:00:00", "2021-01-27 18:00:00"),
+      wl$date.time %within% interval("2021-01-28 00:00:00", "2021-01-28 18:00:00"),
+      wl$date.time %within% interval("2021-01-29 00:00:00", "2021-01-29 18:00:00"),
+      wl$date.time %within% interval("2021-02-01 00:00:00", "2021-02-01 18:00:00"),
+      wl$date.time %within% interval("2021-02-02 00:00:00", "2021-02-02 20:00:00"),
+      wl$date.time %within% interval("2021-02-03 00:00:00", "2021-02-03 18:00:00"),
+      wl$date.time %within% interval("2021-02-04 00:00:00", "2021-02-04 18:00:00"),
+      wl$date.time %within% interval("2021-02-05 00:00:00", "2021-02-05 18:00:00"),
+      wl$date.time %within% interval("2021-02-08 00:00:00", "2021-02-08 18:00:00"),
+      wl$date.time %within% interval("2021-02-09 00:00:00", "2021-02-09 18:00:00"),
+      wl$date.time %within% interval("2021-02-10 00:00:00", "2021-02-10 18:00:00"),
+      wl$date.time %within% interval("2021-02-11 00:00:00", "2021-02-11 18:00:00"),
+      wl$date.time %within% interval("2021-02-12 00:00:00", "2021-02-12 18:00:00"),
+      wl$date.time %within% interval("2021-03-02 00:00:00", "2021-03-03 18:00:00")
+      ) %>% 
+      data.frame %>% 
+  apply(., 1, function(x) any(x)==TRUE) %>% 
+  as.character(.) %>% 
+  dplyr::recode(., "TRUE" = "Fasting", "FALSE" = "Eating") %>%
+  factor(., levels=c("Fasting", "Eating"))
+wl$day <- weekdays(as.Date(wl$date), abbreviate = TRUE) %>% factor(., levels=c("Mon","Tue","Wed","Thu","Fri","Sat","Sun"))
+wl$month <- format(as.Date(wl$date), "%b-%y")
+wl$month %<>% factor(., levels=rev(unique(.)))
+
+#### REMOVE DUPLICATES ####
+wl %<>% subset(., duplicated(date.time)==FALSE)
+
+#### WEIGHT ####
+wl$weight %<>% str_replace_all(., "Lb", "") %>% as.numeric(.)
+
+#### BMI ####
+#overwriting bmi data provided by scale
+wl$bmi <- round((wl$weight*0.453592)/(1.74625^2), 2) #weight in kilograms dividied by height in meters squared
+
+#### ROLLING AVERAGE ####
+#by day only
+wl.day <- split(wl, f = wl$date)
+wl.day <- lapply(wl.day, function(x) data.frame(date = unique(x$date), day = unique(x$day), mean = round(mean(x$weight, na.rm=TRUE), 1)))
+wl.day %<>% bind_rows(.)
+wl.day %<>% dplyr::mutate(., mean.roll = zoo::rollmean(mean, k = 7, fill = NA) %>% round(.,1)) 
+wl.day.gg <- ggplot(subset(wl.day, date > "2020-10-01"), aes(date, mean.roll)) +
+  geom_line(size = 1)
+for (i in 1:nrow(wl)) {
+  x <- grep(wl.day$date[i], wl$date)
+  wl$mean.roll[x] <- wl.day$mean.roll[i]
+}
+current.av <- wl$mean.roll[is.na(wl$mean.roll)==FALSE][1] #latest three-day average
+                           
+#### SLOPE ####
+# start <- as.Date("2020-01-01")
+# end <- as.Date(Sys.Date()) #set Sys.Date() for latest date
+# target <- as.Date("2021-02-01")
+# cat("Approximate current weight based on \nthree-day rolling average is ", round(current.av, 1), " lbs", sep="")
+# cat(lm(weight~date, data=subset(wl, date %within% interval(start, end)))$coefficients[[2]] %>% `*`(-1) %>% round(.,2), "lbs per day\n") #weight change per day
+# cat(lm(weight~date, data=subset(wl, date %within% interval(start, end)))$coefficients[[2]] %>% `*`(-7) %>% round(.,2), "lbs per week\n") #weight change per day
+# cat(lm(weight~date, data=subset(wl, date %within% interval(start, end)))$coefficients[[2]] %>% `*`(-30) %>% round(.,2), "lbs per month\n") #weight change per day
+# cat("At the rate set by the defined period of time, \napproximately", 
+#     lm(weight~date, data=subset(wl, date %within% interval(start, end)))$coefficients[[2]] %>%
+#       `*`(as.numeric(target-Sys.Date())) %>%
+#       `*`(-1) %>%
+#       round(.,2),
+#     "lbs will be lost between today and",
+#     format(target, "%B %d, %Y"),
+#     "\n") #weight change per day
+
+#### SAVE DATA ####
+write.csv(wl, paste(getwd(), "/gutierrez.weight.csv", sep=""))
+
+#### BAR GRAPH ####
+#https://www.statworx.com/de/blog/bang-bang-how-to-program-with-dplyr/
+#https://adv-r.hadley.nz/quasiquotation.html
+# grp.tbl <- function(df, group) {
+#   group <- enquo(group)
+#   df %>%
+#   group_by(!!group, month) %>%
+#   summarize(weight = mean(weight))
+# }
+# 
+# by.status <- TRUE
+# out.group <- "status"
+# bar.tbl <- {if(by.status==TRUE) group_by(wl, !!enquo(out.group), month) else group_by(wl, month)} %>% 
+#   summarize(weight = mean(weight))
+# bar.tbl
+# bar <- ggplot(bar.tbl) +
+#   geom_col(aes(month, weight))
+# bar
+
+
+#### DESCRIPTIVES/ANALYTICS ####
+# wl %>% 
+#   group_by(month) %>% 
+#   dplyr::summarize(mean = mean(weight) %>% round(1), 
+#                    sd = sd(weight) %>% round(1),
+#                    n = n(),
+#                    minimum = min(weight),
+#                    maximum = max(weight),
+#                    `95% CI` = paste(
+#                      sprintf("%.1f", mean-qnorm(0.975)*sd/sqrt(n),1),
+#                      sprintf("%.1f", mean+qnorm(0.975)*sd/sqrt(n),1),
+#                      sep = " - ")) %>% 
+#   as.data.frame() %>% 
+#   formattable(., list(mean = color_tile("gray90", "gray50"),
+#                       sd = color_tile("gray90", "gray50"),
+#                       n = color_tile("gray90", "gray50"),
+#                       minimum = color_tile("gray90", "gray50"),
+#                       maximum = color_tile("gray90", "gray50")))
+# 
+# aov(weight ~ month, wl) %>% lsr::etaSquared(., type=3, anova=TRUE)
+# aov(weight ~ month, wl) %>% TukeyHSD
+# wl %>% 
+#   group_by(day) %>% 
+#   dplyr::summarize(mean = mean(weight) %>% round(1), 
+#                    sd = sd(weight) %>% round(1),
+#                    n = n(),
+#                    ci.lower = round(mean-qnorm(0.975)*sd/sqrt(n),1),
+#                    ci.upper = round(mean+qnorm(0.975)*sd/sqrt(n),1)) %>% 
+#   as.data.frame() 
+# aov(weight ~ day, wl) %>% lsr::etaSquared(., type=3, anova=TRUE)
+# aov(weight ~ day, wl) %>% TukeyHSD
+# wl %>% 
+#   group_by(day, time.day) %>% 
+#   dplyr::summarize(mean = mean(weight) %>% round(1), 
+#                    sd = sd(weight) %>% round(1),
+#                    n = n(),
+#                    ci.lower = round(mean-qnorm(0.975)*sd/sqrt(n),1),
+#                    ci.upper = round(mean+qnorm(0.975)*sd/sqrt(n),1)) %>% 
+#   as.data.frame() 
+# aov(weight ~ time.day + day, wl) %>% lsr::etaSquared(., type=3, anova=TRUE)
+# aov(weight ~ time.day + day, wl) %>% TukeyHSD
+
+#### PLOTLY PLOT ####
+# left <- as.POSIXct("2020-10-01 00:00:00")
+# right <- as.POSIXct("2021-01-11 00:00:00")
+# weight.gg <- ggplot(wl, aes(date.time, weight)) +
+#   geom_point(size=4, alpha=.5, aes(color = status)) +
+#   geom_line(size=1, aes(y = mean.roll, color="7-Day Average")) +
+#   geom_smooth(method = "lm", formula = y ~ x, alpha=.10, aes(color="Linear")) + #linear
+#   geom_smooth(method = "lm", formula = y ~ x + I(x^2), alpha=.10, aes(color="Quadratic")) + #quadratic
+#   scale_color_manual(values = vapoRwave:::newRetro_palette[c(9,1,5,6,8)]) +
+#   scale_x_datetime(date_breaks = "2 weeks",
+#                    date_labels = "%b \n%d",
+#                    limits = c(left, right)) +
+#   scale_y_continuous(limits = c(215, 250), breaks = seq(from = 215, to = 255, by = 5)) +
+#   labs(title = "Weight Tracker",
+#        subtitle = format(Sys.Date(), "%B %d, %Y"),
+#        x = "Date",
+#        y = "Weight\n{LBS}") +
+#   new_retro(main.text.color = "#228BDC",
+#             legend.position = "right",
+#             base.size = 25,
+#             title.size = 40)
+# weight.gg$labels$colour <- ""
+# #weight.gg
+# #weight.gg <- weight.gg + facet_wrap(~ day) #add a facet wrap if you like
+# weight.plotly <- ggplotly(weight.gg) %>%
+#   layout(title = list(text = paste0('<span style="font-size: 24px;">',
+#                                     'Weight Tracker: ',
+#                                     '</span>',
+#                                     '<span style="font-size: 24px;">',
+#                                     format(Sys.Date(), "%B %d, %Y"),
+#                                     '</span>')))
+# #https://plotly-r.com/saving.html
+# saveWidget(weight.plotly, file=paste(getwd(), "/weight.plotly.html", sep=""), selfcontained = TRUE)
+# #system("open weight.plotly.html")
+
+
+
+
+#### STATIC PLOT ####
+#Weight Plot
+#scales::show_col(vapoRwave:::newRetro_palette)
+#scales::show_col(vapoRwave:::hotlineBling_palette)
+#weight.gg <- ggplot(wl, aes(date.time, weight)) +
+#         geom_point(size=5, alpha=.4, aes(color = status)) + 
+#         geom_smooth(color="#9239F6", size=1, fill="#903495", span=.1, alpha=.25) + 
+#         geom_smooth(color="#00B19D", fill="#55FFFF", method = "lm", formula = y ~ x + I(x^2), alpha=.10) + #quadratic
+#         #geom_smooth(color="#00B19D", fill="#55FFFF", method = "lm", formula = y ~ x, alpha=.10) + #linear
+#         scale_x_datetime(date_breaks = "2 weeks", 
+#                      date_labels = "%b %d",
+#                      limits = c(
+#                        as.POSIXct("2020-10-05 00:00:00"),
+#                        as.POSIXct("2020-12-07 00:00:00"))) +
+#         scale_y_continuous(limits = c(220, 250), breaks = seq(from = 215, to = 255, by = 5)) +
+#         labs(title = "Weight Tracker", 
+#              subtitle = format(Sys.Date(), "%B %d, %Y"),
+#              x = "Date",
+#              y = "Weight\n{LBS}") +
+#         new_retro(main.text.color = "#9239F6",
+#                   legend.position = "right", 
+#                   base.size = 25,
+#                   title.size = 40)
+#weight.gg$labels$colour=""
+#weight.gg
+#
+
+#### ANIMATED PLOT ####
+#weight.anim <- ggplot(wl, aes(date, weight)) +
+#  geom_point(size=5, alpha=.4, aes(color = factor(time.day))) + 
+#  geom_line(stat="smooth", method='lm', color="#F8B660", size=.75, alpha=.50) +
+#  scale_x_date(date_breaks = "1 week", 
+#               date_labels = "%b %d",
+#               limits = as.Date(c('2020-10-12','2020-11-24'))) +
+#  scale_y_continuous(limits = c(220, 250), breaks = seq(from = 225, to = 255, by = 5)) +
+#  labs(title = "Weight Tracker", 
+#       subtitle = format(Sys.Date(), "%B %d, %Y"),
+#       x = "Date",
+#       y = "Weight\nLBS") +
+#  new_retro(legend.position = "right", 
+#            base.size = 25,
+#            title.size = 40,
+#            legend.title = "time of day")
+#weight.anim
+#weight.anim <- weight.anim +   transition_states(time.day,
+#                                                 transition_length = 2,
+#                                                 state_length = 1)
+#weight.anim
+#
+#  
