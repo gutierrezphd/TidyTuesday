@@ -79,8 +79,9 @@ shade.anim <- shades %>%
   ggplot(aes(sat, lightness, color=hex)) +
   geom_point(size=10, alpha=.8)+
   scale_color_identity() +
-  dark_theme_void(base_family = "Century Gothic", base_size = 24) +
-    theme(plot.title = element_text(hjust = 0.5),
+  dark_theme_void(base_family = "Century Gothic", base_size = 30) +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.caption = element_text(size=16, hjust = 0.5),
         legend.position = "none") +
   transition_states(
     brand,
@@ -89,7 +90,8 @@ shade.anim <- shades %>%
   ) +
   enter_fade() + 
   exit_fade() +
-  labs(title = '{closest_state}') +
+  labs(title = '{closest_state}',
+       caption = "#TidyTuesday Visualization by @IanAGutierrez | Source: @PuddingViz") +
   ease_aes('cubic-in-out')
 
 ```
