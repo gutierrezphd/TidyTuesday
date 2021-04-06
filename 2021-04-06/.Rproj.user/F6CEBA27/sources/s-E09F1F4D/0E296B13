@@ -1,24 +1,24 @@
 {
-    "id": "D8E6FB96",
+    "id": "0E296B13",
     "path": "~/Google Drive (ian.gutierrez.phd@gmail.com)/TidyTuesday/TidyTuesday/2021-03-30/2021_03_30_tidy_tuesday.Rmd",
-    "project_path": "2021_03_30_tidy_tuesday.Rmd",
+    "project_path": null,
     "type": "r_markdown",
     "hash": "0",
     "contents": "",
-    "dirty": true,
-    "created": 1617070804346.0,
+    "dirty": false,
+    "created": 1617712704341.0,
     "source_on_save": false,
-    "relative_order": 1,
+    "relative_order": 2,
     "properties": {
-        "cursorPosition": "125,0",
-        "scrollLine": "107"
+        "cursorPosition": "83,56",
+        "scrollLine": "75"
     },
     "folds": "",
-    "lastKnownWriteTime": 1617246421,
+    "lastKnownWriteTime": 1617287057,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1617247300646,
+    "last_content_update": 1617287057,
     "read_only": false,
     "read_only_alternatives": []
 }
