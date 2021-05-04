@@ -106,6 +106,7 @@ vegoil %>%
         plot.title = element_text(size=18, color="lightgreen"),
         plot.subtitle = element_text(size=14),
         plot.caption = element_text(size=9, hjust = 0, color="lightgreen"),
+        plot.margin=grid::unit(c(.25,.25,.25,.25), "in"),
         legend.text = element_text(size=12, color="lightblue"),
         legend.position = "right") +
   labs(title = "Vegetable Oil Production by Country",
@@ -127,7 +128,7 @@ Save your image for sharing. Be sure to use the `#TidyTuesday` hashtag in your p
 ggsave(
   filename = "Veg_Oil_Gutierrez_2021_04_06.png",
   device = "png",
-  width=7,
-  height=3.93)
+  width=7.1,
+  height=4)
 
 ```
