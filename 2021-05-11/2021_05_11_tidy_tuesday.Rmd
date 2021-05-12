@@ -150,10 +150,11 @@ md.bb.use <- bb.md %>%
         plot.caption = element_text(size=11, hjust=.5, color="#EAAB00"),
         panel.background = element_rect(fill="#981E32",
                                         color="#981E32"),
-        plot.margin = margin(t = .25, r = .25, b = .25, l = .25, 
+        plot.margin = margin(t = .25, r = 25, b = .25, l = .25, 
                              unit = "in"),
         legend.text = element_text(size=18),
-        legend.position = c(.25,.4)) +
+        legend.position = c(.25,.4),
+        plot.) +
   labs(title = "Broadband Usage in Maryland",
        subtitle = "Percent by County",
        caption = "#TidyTuesday Visualization by @IanAGutierrez | Data from @Microsoft via @Verge")
@@ -163,8 +164,8 @@ md.bb.use
 md.flag <- here::here("Flag_of_Maryland.png")
 
 ggdraw(md.bb.use, clip="on") +
-  draw_image(md.flag, x = .02, y = .7, width=.13, height=.13*2/3) +
-  draw_image(md.flag, x = .85, y = .7, width=.13, height=.13*2/3)
+  draw_image(md.flag, x = .1, y = .85, width=.15, height=.15*2/3) +
+  draw_image(md.flag, x = .75, y = .85, width=.15, height=.15*2/3)
 
   
 ```
@@ -179,7 +180,7 @@ Save your image for sharing. Be sure to use the `#TidyTuesday` hashtag in your p
 ggsave(
   filename = "Maryland_Broadband_2021_05_11.png",
   device = "png",
-  width=7.1,
-  height=7.1)
+  width=9,
+  height=9/1.775)
 
 ```
