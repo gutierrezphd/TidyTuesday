@@ -1,0 +1,16 @@
+mtcars %>% 
+  slice_min(disp)
+
+tibble(
+  type = c('h', 'h', 'u', 'h', 'h', 'u', 'u'),
+  bedrooms = c(5, 4, 3, 3, 2, 2, 1),
+  count = c(48, 51, 49, 51, 49, 50, 48),
+  sum_houses = c(410, 341, 279, 264, 231, 207, 159)
+) %>% 
+  slice_max(
+    order_by = sum_houses,
+    n        = 1
+  )
+
+?slice_max
+

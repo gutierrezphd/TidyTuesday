@@ -1,0 +1,186 @@
+---
+title: "TidyTemplate"
+date: 2021-05-17
+output: html_output
+---
+
+# TidyTuesday
+
+Join the R4DS Online Learning Community in the weekly #TidyTuesday event!
+Every week we post a raw dataset, a chart or article related to that dataset, and ask you to explore the data.
+While the dataset will be “tamed”, it will not always be tidy! As such you might need to apply various R for Data Science techniques to wrangle the data into a true tidy format.
+The goal of TidyTuesday is to apply your R skills, get feedback, explore other’s work, and connect with the greater #RStats community!
+As such we encourage everyone of all skills to participate!
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(tidytuesdayR)
+library(stopwords)
+library(showtext)
+library(cowplot)
+```
+
+# Load the weekly Data
+
+Dowload the weekly data and make available in the `tt` object.
+
+```{r Load}
+
+tt <- tt_load("2021-05-18")
+
+```
+
+
+# Readme
+
+Take a look at the readme for the weekly data to get insight on the dataset.
+This includes a data dictionary, source, and a link to an article on the data.
+
+```{r Readme, eval = interactive()}
+
+tt
+
+```
+
+
+# Glimpse Data
+
+Take an initial look at the format of the data available.
+
+```{r Glimpse}
+
+tt %>% 
+  map(glimpse)
+
+```
+
+# Wrangle
+
+Explore the data and process it into a nice format for plotting! Access each dataset by name by using a dollarsign after the `tt` object and then the name of the data set.
+
+```{r Wrangle}
+
+d <- tt$survey
+d <- d %>% 
+  mutate(job_title = job_title %>% tolower)
+
+topwords <- d %>% 
+  filter(state=="California") %>% 
+  pull(job_title) %>% 
+  str_split(" ") %>% 
+  unlist %>% 
+  tolower %>% 
+  str_replace_all("[[:punct:]]","") %>% 
+  str_replace_all("sr","senior") %>% 
+  tibble(words = .) %>% 
+  filter(!(words %in% stopwords())) %>% 
+  filter(words!="") %>% 
+  mutate(words = str_to_title(words)) %>% 
+  count(words) %>% 
+  arrange(desc(n)) 
+
+lowerwords <- topwords$words %>% tolower
+
+wordsalaries <- list()
+for (i in 1:10) {
+  wordsalaries[[i]] <- d %>% 
+    filter(state=="California") %>% 
+    filter(annual_salary>=10000 & annual_salary<=1000000) %>% 
+    filter(str_detect(job_title, lowerwords[i])) %>%
+    summarize(median = median(annual_salary, na.rm=TRUE),
+              max = max(annual_salary, na.rm=TRUE),
+              min = min(annual_salary, na.rm=TRUE))
+}
+
+wordsalaries <- wordsalaries %>% 
+  bind_rows
+
+wordsalaries$words <- lowerwords[1:10] %>% str_to_title
+wordsalaries <- wordsalaries %>% 
+  left_join(topwords, by="words") %>% 
+  mutate(words = words %>% factor %>% fct_inorder %>% fct_rev)
+  
+```
+
+
+# Visualize
+
+Using your processed dataset, create your unique visualization.
+
+```{r Visualize}
+
+font_add_google("Mukta", "mukta")
+showtext_auto()
+
+freqplot <- topwords %>% 
+  .[1:10,] %>% 
+  mutate(words = words %>% fct_reorder(n)) %>% 
+  ggplot(aes(n, words, label = n)) +
+  geom_col(width=.9) +
+  geom_text(color="white",hjust=1.1) +
+  theme_classic() +
+  theme(text = element_text(size=16, family="mukta"),
+        plot.title = element_text(size=20, hjust=.5),
+        plot.margin = unit(c(0.1, 0.15, 0.25, 0.1), "in"),
+        panel.grid.minor = element_blank(),
+        panel.grid.major.x = element_line(color="gray80"),
+        legend.position = "none") +
+  labs(title = "10 Most Common\nJob Title Words in California",
+       x = "Frequency",
+       y = "Job Titles Words")
+
+freqplot
+
+mainplot <- wordsalaries %>% 
+  mutate(words = words %>% fct_reorder(median)) %>% 
+  ggplot(aes(median, words)) + 
+  geom_segment(aes(xend=min, yend=words), size=1, color="red") +
+  geom_segment(aes(xend=max, yend=words), size=1, color="green") +
+  geom_point(aes(size=n/500), color="gray20") +
+  geom_point(aes(x=min, y=words), color="red") +
+  geom_point(aes(x=max, y=words), color="green") +
+  scale_x_log10(labels = scales::dollar_format(scale=.001, suffix="K", largest_with_cents=1),
+                breaks = c(c(10,25,50,75,100,150,300,500,1000,5000) %o% 1000)) +
+  theme_classic() +
+  theme(text = element_text(size=16, family="mukta"),
+        plot.title = element_text(size=20, hjust=.5),
+        plot.margin = unit(c(0.1, 0.15, 0.9, 0.1), "in"),
+        panel.grid.minor = element_blank(),
+        panel.grid.major.x = element_line(color="gray80"),
+        legend.position = "none") +
+  labs(title = "Median Salary by 10 Most Common\nJob Title Words in California",
+       x = "Salary",
+       y = "Job Titles Words")
+
+mainplot
+
+annot.text.size <- 11.5/2.8
+comb.plot <- plot_grid(freqplot, mainplot, ncol=1, greedy=FALSE)
+comb.plot
+ggdraw(comb.plot) +
+  annotate("text", x = 0.12, y = 0.075, hjust = 0, colour = "black", family = "mukta", label = str_wrap("The size of the black dot represents the number of times that word appeared across all job title words. ",125), size = annot.text.size) +
+  annotate("text", x = 0.12, y = 0.055, hjust = 0, colour = "black", family = "mukta", label = str_wrap("Salary ranges were restricted to a minimum of $10,000 and a maximum of $1,000,000 to eliminate outliers. ",125), size = annot.text.size) +
+    annotate("text", x = 0.12, y = 0.035, hjust = 0, colour = "black", family = "mukta", label = str_wrap("Red dots represent minimum values within range, and green points represent maximum values within the range. ",125), size = annot.text.size) +
+  annotate("text", x = .3, y = 0.012, hjust = 0, colour = "gray30", family = "mukta", label = "#TidyTuesday Visualization by @IanAGutierrez | Data Courtesy of @AskAManager", size = 11/2.8)
+  
+
+
+```
+
+# Save Image
+
+Save your image for sharing. Be sure to use the `#TidyTuesday` hashtag in your post on twitter! 
+
+```{r}
+
+# This will save your most recent plot
+ggsave(
+  filename = "California_JobTitles_Salaries_2021_05_18.png",
+  device = "png",
+  width=9,
+  height=9)
+
+```
