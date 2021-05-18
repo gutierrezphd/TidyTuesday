@@ -124,7 +124,7 @@ freqplot <- topwords %>%
   theme_classic() +
   theme(text = element_text(size=16, family="mukta"),
         plot.title = element_text(size=20, hjust=.5),
-        plot.margin = unit(c(0.1, 0.15, 0.25, 0.1), "in"),
+        plot.margin = unit(c(0.1, 0.25, 0.25, 0.1), "in"),
         panel.grid.minor = element_blank(),
         panel.grid.major.x = element_line(color="gray80"),
         legend.position = "none") +
@@ -143,11 +143,11 @@ mainplot <- wordsalaries %>%
   geom_point(aes(x=min, y=words), color="red") +
   geom_point(aes(x=max, y=words), color="green") +
   scale_x_log10(labels = scales::dollar_format(scale=.001, suffix="K", largest_with_cents=1),
-                breaks = c(c(10,25,50,75,100,150,300,500,1000,5000) %o% 1000)) +
+                breaks = c(c(10,25,50,75,100,150,300,500,1000,5000,10000) %o% 1000)) +
   theme_classic() +
   theme(text = element_text(size=16, family="mukta"),
         plot.title = element_text(size=20, hjust=.5),
-        plot.margin = unit(c(0.1, 0.15, 0.9, 0.1), "in"),
+        plot.margin = unit(c(0.1, 0.25, 0.9, 0.1), "in"),
         panel.grid.minor = element_blank(),
         panel.grid.major.x = element_line(color="gray80"),
         legend.position = "none") +
